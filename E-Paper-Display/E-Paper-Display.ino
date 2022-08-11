@@ -200,7 +200,7 @@ void onMqttMessage(char *topic, char *payload,
 ///////////////////////////////////////////////////////////////////////////////////
 
 void updateDisplay(DynamicJsonDocument doc) {
-  float outdoorTemp = doc["OutdoorTemp"];
+  float outdoorTemp = doc["OutdoorTemperature"];
   float outdoorHumidity = doc["OutdoorHumidity"];
   float windSpeed = doc["WindSpeed"];
   float airPressure = doc["AirPressure"];
