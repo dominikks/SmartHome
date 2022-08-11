@@ -2,6 +2,13 @@
 
 Collection of firmware and configs for smart home devices.
 
+## E-Paper-Display
+
+Software to control an ePaper display over MQTT.
+[Documentation](E-Paper-Display/README.md).
+
+With inspiration from [here](https://www.smarthomeng.de/epaper-wetterstation-mit-daten-aus-smarthomeng).
+
 ## HB-Uni-Sensor
 
 Based on [HB-Uni-Sensor1](https://github.com/TomMajor/SmartHome/tree/master/HB-UNI-Sensor1).

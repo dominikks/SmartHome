@@ -100,3 +100,5 @@ dkms.conf
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,visualstudiocode
+
+/E-Paper-Display/config/config.h
