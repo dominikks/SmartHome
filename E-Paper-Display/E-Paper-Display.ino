@@ -121,7 +121,7 @@ void connectToWifi() {
     do {
       display.fillScreen(GxEPD_WHITE);
       display.setCursor(0, 100);
-      display.println("Verbinde mit WiFi...");
+      display.println("Verbinde...");
     } while (display.nextPage());
   });
 
@@ -130,19 +130,6 @@ void connectToWifi() {
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
-
-  taskQueue.push([]() {
-    display.setFont(&FreeMonoBold12pt7b);
-    display.setTextColor(GxEPD_BLACK);
-    display.setFullWindow();
-    display.firstPage();
-
-    do {
-      display.fillScreen(GxEPD_WHITE);
-      display.setCursor(0, 100);
-      display.println("Verbinde mit MQTT...");
-    } while (display.nextPage());
-  });
 
   mqtt.connect();
 }
