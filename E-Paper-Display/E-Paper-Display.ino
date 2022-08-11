@@ -56,10 +56,6 @@ void setup() {
   mqtt.onMessage(onMqttMessage);
   mqtt.setServer(mqtt_server, mqtt_port);
 
-  connectToWifi();
-
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
   ArduinoOTA.setHostname("epaper-status-display");
   ArduinoOTA.setPassword(ota_password);
   ArduinoOTA
@@ -92,6 +88,8 @@ void setup() {
           Serial.println("End Failed");
       });
   ArduinoOTA.begin();
+
+  connectToWifi();
 }
 
 void loop() {
@@ -141,6 +139,10 @@ void onWiFiEvent(WiFiEvent_t event) {
     Serial.print("WiFi connected, ");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+
+    // Init NTP
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
     connectToMqtt();
     break;
   case SYSTEM_EVENT_STA_DISCONNECTED:
