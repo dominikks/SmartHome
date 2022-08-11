@@ -209,55 +209,58 @@ void updateDisplay(DynamicJsonDocument doc) {
   float ozone = doc["Ozone"];
   bool isRaining = doc["IsRaining"];
 
-  struct tm timeinfo;
-  bool hasTime = getLocalTime(&timeinfo);
+  taskQueue.push([uvIndex, uvIndexDescription, ozone, outdoorTemp,
+                  outdoorHumidity, windSpeed, airPressure]() {
+    struct tm timeinfo;
+    bool hasTime = getLocalTime(&timeinfo);
 
-  display.setTextColor(GxEPD_BLACK);
-  display.setFullWindow();
-  display.firstPage();
+    display.setTextColor(GxEPD_BLACK);
+    display.setFullWindow();
+    display.firstPage();
 
-  do {
-    display.fillScreen(GxEPD_WHITE);
-    display.setFont(&FreeMonoBold9pt7b);
+    do {
+      display.fillScreen(GxEPD_WHITE);
+      display.setFont(&FreeMonoBold9pt7b);
 
-    if (hasTime) {
-      display.setCursor(0, 11);
-      display.println(&timeinfo, "%H:%M:%S");
-      display.setCursor(150, 11);
-      display.println(my_city);
-      display.setCursor(290, 11);
-      display.println(&timeinfo, "%d.%m.%Y");
-    }
+      if (hasTime) {
+        display.setCursor(0, 11);
+        display.println(&timeinfo, "%H:%M:%S");
+        display.setCursor(150, 11);
+        display.println(my_city);
+        display.setCursor(290, 11);
+        display.println(&timeinfo, "%d.%m.%Y");
+      }
 
-    drawDashedHLine(0, 20, 420, GxEPD_BLACK);
+      drawDashedHLine(0, 20, 420, GxEPD_BLACK);
 
-    display.setCursor(270, 100);
-    display.println("UV: " + uvIndex);
-    display.setCursor(270, 115);
-    display.println(uvIndexDescription);
-    display.setCursor(270, 140);
-    display.print("Ozon: ");
-    display.println((int)ozone, DEC);
+      display.setCursor(270, 100);
+      display.println("UV: " + uvIndex);
+      display.setCursor(270, 115);
+      display.println(uvIndexDescription);
+      display.setCursor(270, 140);
+      display.print("Ozon: ");
+      display.println((int)ozone, DEC);
 
-    display.setFont(&FreeMonoBold12pt7b);
-    dashedRect(0, 25, 260, 125, GxEPD_BLACK);
-    display_icon(2, 25, "temperature");
-    display.setCursor(50, 47);
-    display.print(outdoorTemp);
-    display.print(" Grad");
-    display.setCursor(50, 67);
-    display.print(outdoorHumidity * 100, 0);
-    display.println("%");
-    display_icon(2, 65, "wind_speed");
-    display.setCursor(50, 98);
-    display.print((int)windSpeed, DEC);
-    display.println("km/h");
+      display.setFont(&FreeMonoBold12pt7b);
+      dashedRect(0, 25, 260, 125, GxEPD_BLACK);
+      display_icon(2, 25, "temperature");
+      display.setCursor(50, 47);
+      display.print(outdoorTemp);
+      display.print(" Grad");
+      display.setCursor(50, 67);
+      display.print(outdoorHumidity * 100, 0);
+      display.println("%");
+      display_icon(2, 65, "wind_speed");
+      display.setCursor(50, 98);
+      display.print((int)windSpeed, DEC);
+      display.println("km/h");
 
-    display_icon(15, 113, "barometer");
-    display.setCursor(50, 135);
-    display.print((int)airPressure, DEC);
-    display.println("hPa");
-  } while (display.nextPage());
+      display_icon(15, 113, "barometer");
+      display.setCursor(50, 135);
+      display.print((int)airPressure, DEC);
+      display.println("hPa");
+    } while (display.nextPage());
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
