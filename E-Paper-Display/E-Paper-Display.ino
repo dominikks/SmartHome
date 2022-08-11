@@ -56,6 +56,10 @@ void setup() {
   mqtt.onMessage(onMqttMessage);
   mqtt.setServer(mqtt_server, mqtt_port);
 
+  connectToWifi();
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   ArduinoOTA.setHostname("epaper-status-display");
   ArduinoOTA.setPassword(ota_password);
   ArduinoOTA
@@ -88,10 +92,6 @@ void setup() {
           Serial.println("End Failed");
       });
   ArduinoOTA.begin();
-
-  connectToWifi();
-
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 }
 
 void loop() {
