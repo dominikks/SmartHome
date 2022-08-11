@@ -1,5 +1,9 @@
 # E-Paper-Display
 
+## Config
+
+Copy the contents of `config/config.template.h` into a new file `config/config.h` and update the values to match your environment.
+
 ## Used Libraries
 
 Libraries available via the Arduino library manager:
