@@ -40,7 +40,7 @@ void setup() {
   Serial.println("ePaper Status Display");
   delay(1000);
 
-  display.init(115200);
+  display.init(115200, true, 2, false);
 
   mqttReconnectTimer =
       xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
