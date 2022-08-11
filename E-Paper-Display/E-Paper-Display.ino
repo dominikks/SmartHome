@@ -28,12 +28,6 @@ TimerHandle_t wifiReconnectTimer;
 typedef std::function<void()> Task;
 RingBuf<Task, 10> taskQueue;
 
-// ePaper Pins
-#define EPD_CS 23
-#define EPD_DC 18
-#define EPD_RST 5
-#define EPD_BUSY 17
-
 GxEPD2_3C<GxEPD2_420c, GxEPD2_420c::HEIGHT>
     display(GxEPD2_420c(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
 
