@@ -2,6 +2,11 @@
 
 Collection of firmware and configs for smart home devices.
 
+## BME680-Sensor
+
+Simple sketch to send data from a Bosch BME680 sensor via MQTT.
+[Documentation](BME680-Sensor/README.md).
+
 ## E-Paper-Display
 
 Software to control an ePaper display over MQTT.
