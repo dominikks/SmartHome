@@ -102,3 +102,4 @@ dkms.conf
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,visualstudiocode
 
 /E-Paper-Display/config/config.h
+/BME680-Sensor/config/config.h
