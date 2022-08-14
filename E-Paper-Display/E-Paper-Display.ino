@@ -179,16 +179,16 @@ void onMqttMessage(char *topic, char *payload,
   DynamicJsonDocument doc(2048);
   if (deserializeJson(doc, payload, len)) {
     Serial.println(F("Failed to parse JSON"));
+  } else {
+    taskQueue.push([doc]() { updateDisplay(doc); });
   }
-
-  taskQueue.push([doc]() { updateDisplay(doc); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Display methods
 ///////////////////////////////////////////////////////////////////////////////////
 
-void updateDisplay(DynamicJsonDocument doc) {
+void updateDisplay(const DynamicJsonDocument &doc) {
   float outdoorTemp = doc["OutdoorTemperature"];
   float outdoorHumidity = doc["OutdoorHumidity"];
   float windSpeed = doc["WindSpeed"];
