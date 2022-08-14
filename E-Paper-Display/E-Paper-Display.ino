@@ -56,7 +56,7 @@ void setup() {
   mqtt.onMessage(onMqttMessage);
   mqtt.setServer(mqtt_server, mqtt_port);
 
-  ArduinoOTA.setHostname("epaper-status-display");
+  ArduinoOTA.setHostname(ota_device_name);
   ArduinoOTA.setPassword(ota_password);
   ArduinoOTA
       .onStart([]() {
@@ -133,7 +133,6 @@ void connectToMqtt() {
 }
 
 void onWiFiEvent(WiFiEvent_t event) {
-  Serial.printf("[WiFi-event] event: %d\n", event);
   switch (event) {
   case SYSTEM_EVENT_STA_GOT_IP:
     Serial.print("WiFi connected, ");
