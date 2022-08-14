@@ -1,3 +1,5 @@
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // UPDATE THOSE VALUES FOR YOUR ENVIRONMENT
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -10,6 +12,7 @@ const char *mqtt_topic = "";
 
 // Password to update the software via WiFi
 const char *ota_password = "";
+const char *ota_device_name = "esp32-device";
 
 // Time is retrieved via NTP
 const char *ntpServer = "pool.ntp.org";
