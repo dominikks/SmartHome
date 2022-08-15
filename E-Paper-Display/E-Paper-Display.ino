@@ -249,7 +249,7 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.print("Gestern: ");
     display.println(sunshineHoursYesterday);
 
-    display.setFont(&FreeMonoBold12pt7b);    
+    display.setFont(&FreeMonoBold12pt7b);
     dashedRect(0, 25, 210, 125, GxEPD_BLACK);
     display_icon(2, 25, "temperature");
     display.setCursor(50, 47);
@@ -276,7 +276,7 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.setCursor(50, 202);
     display.print((int)indoorHumidity, DEC);
     display.println("%");
-    
+
     display.setCursor(5, 237);
     display.print("CO");
     display.setFont(&FreeMonoBold9pt7b);
@@ -286,14 +286,14 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.setCursor(50, 237);
     display.print((int)co2, DEC);
     display.println(" ppm");
-    
-    display.setFont(&FreeMonoBold9pt7b);    
+
+    display.setFont(&FreeMonoBold9pt7b);
     display_icon(7, 260, "sunrise_sunset");
     display.setCursor(60, 280);
-    struct tm timeinfo; 
+    struct tm timeinfo;
     localtime_r(&sunriseTime, &timeinfo);
     display.println(&timeinfo, "%H:%M");
-    display.setCursor(60, 294); 
+    display.setCursor(60, 294);
     localtime_r(&sunsetTime, &timeinfo);
     display.println(&timeinfo, "%H:%M");
 
@@ -301,11 +301,8 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.setCursor(170, 287);
     display.print(powerMeter, 2);
     display.println(" kWh");
-        
-    display.setTextColor(windowsOpen ? GxEPD_RED : GxEPD_BLACK);
-    display.setCursor(315, 294);
-    display.println("Fenster");
-    display.setTextColor(GxEPD_BLACK);    
+
+    display_icon(367, 267, windowsOpen ? "window_open" : "window_closed");
   } while (display.nextPage());
 }
 
@@ -429,4 +426,8 @@ void display_icon(int x, int y, String icon_name) {
     display.drawBitmap(x, y, gate_closed, 47, 50, GxEPD_BLACK);
   else if (icon_name == "electricity")
     display.drawBitmap(x, y, electricity, 30, 30, GxEPD_BLACK);
+  else if (icon_name == "window_open")
+    display.drawBitmap(x, y, window_open, 32, 32, GxEPD_RED);
+  else if (icon_name == "window_closed")
+    display.drawBitmap(x, y, window_closed, 32, 32, GxEPD_BLACK);
 }
