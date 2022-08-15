@@ -49,13 +49,34 @@ void setup() {
       xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
                    reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
-  WiFi.onEvent(onWiFiEvent);
-
   mqtt.onConnect(onMqttConnect);
   mqtt.onDisconnect(onMqttDisconnect);
   mqtt.onMessage(onMqttMessage);
   mqtt.setServer(mqtt_server, mqtt_port);
 
+  WiFi.onEvent(onWiFiEvent);
+  connectToWifi();
+
+  // Init NTP
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  setupOta();
+}
+
+void loop() {
+  Task task;
+  if (taskQueue.lockedPop(task)) {
+    task();
+  }
+
+  ArduinoOTA.handle();
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+// Event methods
+///////////////////////////////////////////////////////////////////////////////////
+
+void setupOta() {
   ArduinoOTA.setHostname(ota_device_name);
   ArduinoOTA.setPassword(ota_password);
   ArduinoOTA
@@ -88,40 +109,12 @@ void setup() {
           Serial.println("End Failed");
       });
   ArduinoOTA.begin();
-
-  connectToWifi();
 }
-
-void loop() {
-  Task task;
-  if (taskQueue.lockedPop(task)) {
-    task();
-  }
-
-  ArduinoOTA.handle();
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-// Event methods
-///////////////////////////////////////////////////////////////////////////////////
 
 void connectToWifi() {
   Serial.print("Connecting to WiFi ");
   Serial.print(wifi_ssid);
   Serial.println("...");
-
-  taskQueue.push([]() {
-    display.setFont(&FreeMonoBold12pt7b);
-    display.setTextColor(GxEPD_BLACK);
-    display.setFullWindow();
-    display.firstPage();
-
-    do {
-      display.fillScreen(GxEPD_WHITE);
-      display.setCursor(0, 100);
-      display.println("Verbinde...");
-    } while (display.nextPage());
-  });
 
   WiFi.begin(wifi_ssid, wifi_pwd);
 }
@@ -138,9 +131,6 @@ void onWiFiEvent(WiFiEvent_t event) {
     Serial.print("WiFi connected, ");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
-
-    // Init NTP
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
     connectToMqtt();
     break;
@@ -193,12 +183,22 @@ void updateDisplay(const DynamicJsonDocument &doc) {
   float windSpeed = doc["WindSpeed"];
   float airPressure = doc["AirPressure"];
   int uvIndex = doc["UVIndex"];
-  const char *uvIndexDescription = doc["UVIndexDescription"];
+  const char *uvIndexDescription = doc["UVIndexDescription"] | "";
   float ozone = doc["Ozone"];
   bool isRaining = doc["IsRaining"];
+  float powerMeter = doc["PowerMeter"];
+  float indoorTemp = doc["IndoorTemperature"];
+  float indoorHumidity = doc["IndoorHumidity"];
+  long sunsetTime = doc["SunsetTime"];
+  long sunriseTime = doc["SunriseTime"];
+  bool windowsOpen = doc["WindowsOpen"];
+  float rainfallToday = doc["RainfallToday"];
+  float rainfallYesterday = doc["RainfallYesterday"];
+  float co2 = doc["CO2"];
+  const char *sunshineHours = doc["SunshineHours"] | "";
 
-  struct tm timeinfo;
-  bool hasTime = getLocalTime(&timeinfo);
+  struct tm currenttime;
+  bool hasTime = getLocalTime(&currenttime);
 
   display.setTextColor(GxEPD_BLACK);
   display.setFullWindow();
@@ -206,46 +206,100 @@ void updateDisplay(const DynamicJsonDocument &doc) {
 
   do {
     display.fillScreen(GxEPD_WHITE);
+    display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeMonoBold9pt7b);
 
     if (hasTime) {
       display.setCursor(0, 11);
-      display.println(&timeinfo, "%H:%M:%S");
+      display.println(&currenttime, "%H:%M");
       display.setCursor(150, 11);
       display.println(my_city);
       display.setCursor(290, 11);
-      display.println(&timeinfo, "%d.%m.%Y");
+      display.println(&currenttime, "%d.%m.%Y");
     }
 
     drawDashedHLine(0, 20, 420, GxEPD_BLACK);
 
-    display.setCursor(270, 100);
+    display_icon(346, 25, isRaining ? "rain" : "partly_cloudy_day");
+    display.setCursor(240, 47);
     display.print("UV: ");
     display.println(uvIndex);
-    display.setCursor(270, 115);
+    display.setCursor(240, 62);
     display.println(uvIndexDescription);
-    display.setCursor(270, 140);
+    display.setCursor(240, 87);
     display.print("Ozon: ");
     display.println((int)ozone, DEC);
+    display.setCursor(240, 112);
+    display.println("Niederschlag");
+    display.setCursor(240, 127);
+    display.print("Heute:   ");
+    display.print(rainfallToday, 0);
+    display.print("l");
+    display.setCursor(240, 142);
+    display.print("Gestern: ");
+    display.print(rainfallYesterday, 0);
+    display.print("l");
+    display.setCursor(240, 167);
+    display.print("Sonne: ");
+    display.println(sunshineHours);
 
-    display.setFont(&FreeMonoBold12pt7b);
-    dashedRect(0, 25, 260, 125, GxEPD_BLACK);
+    display.setFont(&FreeMonoBold12pt7b);    
+    dashedRect(0, 25, 230, 125, GxEPD_BLACK);
     display_icon(2, 25, "temperature");
     display.setCursor(50, 47);
-    display.print(outdoorTemp);
+    display.print(outdoorTemp, 2);
     display.print(" Grad");
     display.setCursor(50, 67);
     display.print((int)outdoorHumidity, DEC);
     display.println("%");
-    display_icon(2, 65, "wind_speed");
+    display_icon(15, 75, "wind_speed");
     display.setCursor(50, 98);
     display.print((int)windSpeed, DEC);
-    display.println("km/h");
+    display.println(" km/h");
 
     display_icon(15, 113, "barometer");
     display.setCursor(50, 135);
     display.print((int)airPressure, DEC);
-    display.println("hPa");
+    display.println(" hPa");
+
+    dashedRect(0, 160, 230, 90, GxEPD_BLACK);
+    display_icon(2, 160, "temperature");
+    display.setCursor(50, 182);
+    display.print(indoorTemp, 2);
+    display.print(" Grad");
+    display.setCursor(50, 202);
+    display.print((int)indoorHumidity, DEC);
+    display.println("%");
+    
+    display.setCursor(5, 237);
+    display.print("CO");
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(32, 242);
+    display.print("2");
+    display.setFont(&FreeMonoBold12pt7b);
+    display.setCursor(50, 237);
+    display.print((int)co2, DEC);
+    display.println(" ppm");
+    
+    display.setFont(&FreeMonoBold9pt7b);    
+    display_icon(7, 260, "sunrise_sunset");
+    display.setCursor(60, 280);
+    struct tm timeinfo; 
+    localtime_r(&sunriseTime, &timeinfo);
+    display.println(&timeinfo, "%H:%M");
+    display.setCursor(60, 294); 
+    localtime_r(&sunsetTime, &timeinfo);
+    display.println(&timeinfo, "%H:%M");
+
+    display_icon(135, 267, "electricity");
+    display.setCursor(170, 287);
+    display.print(powerMeter, 2);
+    display.println(" kWh");
+        
+    display.setTextColor(windowsOpen ? GxEPD_RED : GxEPD_BLACK);
+    display.setCursor(315, 294);
+    display.println("Fenster");
+    display.setTextColor(GxEPD_BLACK);    
   } while (display.nextPage());
 }
 
@@ -323,10 +377,9 @@ void dashedRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
 }
 
 void display_icon(int x, int y, String icon_name) {
-  int scale = 10; // Adjust size as necessary
-  if (icon_name == "partly-cloudy-day")
+  if (icon_name == "partly_cloudy_day")
     display.drawBitmap(x, y, partly_cloudy_day, 54, 50, GxEPD_BLACK);
-  else if (icon_name == "clear-day")
+  else if (icon_name == "clear_day")
     display.drawBitmap(x, y, clear_day, 54, 50, GxEPD_BLACK);
   else if (icon_name == "rain")
     display.drawBitmap(x, y, rain, 54, 50, GxEPD_BLACK);
@@ -368,4 +421,6 @@ void display_icon(int x, int y, String icon_name) {
     display.drawBitmap(x, y, gate_open, 50, 50, GxEPD_BLACK);
   else if (icon_name == "gate_closed")
     display.drawBitmap(x, y, gate_closed, 47, 50, GxEPD_BLACK);
+  else if (icon_name == "electricity")
+    display.drawBitmap(x, y, electricity, 30, 30, GxEPD_BLACK);
 }
