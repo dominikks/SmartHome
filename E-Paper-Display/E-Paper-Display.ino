@@ -222,35 +222,35 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     drawDashedHLine(0, 20, 420, GxEPD_BLACK);
 
     display_icon(346, 25, isRaining ? "rain" : "partly_cloudy_day");
-    display.setCursor(240, 47);
+    display.setCursor(220, 47);
     display.print("UV: ");
     display.println(uvIndex);
-    display.setCursor(240, 62);
+    display.setCursor(220, 62);
     display.println(uvIndexDescription);
-    display.setCursor(240, 87);
+    display.setCursor(220, 87);
     display.print("Ozon: ");
     display.println((int)ozone, DEC);
-    display.setCursor(240, 112);
+    display.setCursor(220, 112);
     display.println("Niederschlag");
-    display.setCursor(240, 127);
+    display.setCursor(220, 127);
     display.print("Heute:   ");
     display.print(rainfallToday, 0);
     display.print("l");
-    display.setCursor(240, 142);
+    display.setCursor(220, 142);
     display.print("Gestern: ");
     display.print(rainfallYesterday, 0);
     display.print("l");
-    display.setCursor(240, 167);
+    display.setCursor(220, 167);
     display.print("Sonnenschein");
-    display.setCursor(240, 182);
+    display.setCursor(220, 182);
     display.print("Heute:   ");
     display.println(sunshineHoursToday);
-    display.setCursor(240, 197);
+    display.setCursor(220, 197);
     display.print("Gestern: ");
     display.println(sunshineHoursYesterday);
 
     display.setFont(&FreeMonoBold12pt7b);    
-    dashedRect(0, 25, 230, 125, GxEPD_BLACK);
+    dashedRect(0, 25, 210, 125, GxEPD_BLACK);
     display_icon(2, 25, "temperature");
     display.setCursor(50, 47);
     display.print(outdoorTemp, 2);
@@ -268,7 +268,7 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.print((int)airPressure, DEC);
     display.println(" hPa");
 
-    dashedRect(0, 160, 230, 90, GxEPD_BLACK);
+    dashedRect(0, 160, 210, 90, GxEPD_BLACK);
     display_icon(2, 160, "temperature");
     display.setCursor(50, 182);
     display.print(indoorTemp, 2);
