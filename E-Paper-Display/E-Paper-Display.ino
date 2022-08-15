@@ -195,7 +195,8 @@ void updateDisplay(const DynamicJsonDocument &doc) {
   float rainfallToday = doc["RainfallToday"];
   float rainfallYesterday = doc["RainfallYesterday"];
   float co2 = doc["CO2"];
-  const char *sunshineHours = doc["SunshineHours"] | "";
+  const char *sunshineHoursToday = doc["SunshineHoursToday"] | "";
+  const char *sunshineHoursYesterday = doc["SunshineHoursYesterday"] | "";
 
   struct tm currenttime;
   bool hasTime = getLocalTime(&currenttime);
@@ -240,8 +241,13 @@ void updateDisplay(const DynamicJsonDocument &doc) {
     display.print(rainfallYesterday, 0);
     display.print("l");
     display.setCursor(240, 167);
-    display.print("Sonne: ");
-    display.println(sunshineHours);
+    display.print("Sonnenschein");
+    display.setCursor(240, 182);
+    display.print("Heute:   ");
+    display.println(sunshineHoursToday);
+    display.setCursor(240, 197);
+    display.print("Gestern: ");
+    display.println(sunshineHoursYesterday);
 
     display.setFont(&FreeMonoBold12pt7b);    
     dashedRect(0, 25, 230, 125, GxEPD_BLACK);
