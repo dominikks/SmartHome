@@ -183,7 +183,7 @@ void updateDisplay(const DynamicJsonDocument &doc) {
   float windSpeed = doc["WindSpeed"];
   float airPressure = doc["AirPressure"];
   int uvIndex = doc["UVIndex"];
-  const char *uvIndexDescription = doc["UVIndexDescription"] | "";
+  String uvIndexDescription = doc["UVIndexDescription"];
   float ozone = doc["Ozone"];
   bool isRaining = doc["IsRaining"];
   float powerMeter = doc["PowerMeter"];
@@ -195,8 +195,8 @@ void updateDisplay(const DynamicJsonDocument &doc) {
   float rainfallToday = doc["RainfallToday"];
   float rainfallYesterday = doc["RainfallYesterday"];
   float co2 = doc["CO2"];
-  const char *sunshineHoursToday = doc["SunshineHoursToday"] | "";
-  const char *sunshineHoursYesterday = doc["SunshineHoursYesterday"] | "";
+  String sunshineHoursToday = doc["SunshineHoursToday"];
+  String sunshineHoursYesterday = doc["SunshineHoursYesterday"];
 
   struct tm currenttime;
   bool hasTime = getLocalTime(&currenttime);
