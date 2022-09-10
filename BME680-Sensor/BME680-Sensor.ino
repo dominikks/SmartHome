@@ -11,6 +11,8 @@ TimerHandle_t wifiReconnectTimer;
 
 Bsec iaqSensor;
 
+String will_topic = String(mqtt_topic) + "/connected";
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Arduino methods
 ///////////////////////////////////////////////////////////////////////////////////
@@ -19,7 +21,7 @@ void setup(void) {
   Serial.begin(115200);
 
   Wire.begin(SDA_PIN, SCL_PIN);
-  iaqSensor.begin(BME680_I2C_ADDR_PRIMARY, Wire);
+  iaqSensor.begin(BME680_I2C_ADDR_SECONDARY, Wire);
   checkIaqSensorStatus();
 
   bsec_virtual_sensor_t sensorList[10] = {
@@ -52,9 +54,9 @@ void setup(void) {
   mqtt.onConnect(onMqttConnect);
   mqtt.onDisconnect(onMqttDisconnect);
   mqtt.setServer(mqtt_server, mqtt_port);
-
-  String will_topic = String(mqtt_topic) + "/connected";
   mqtt.setWill(will_topic.c_str(), 0, false, "false");
+
+  connectToWifi();
 
   ArduinoOTA.setHostname(ota_device_name);
   ArduinoOTA.setPassword(ota_password);
@@ -88,8 +90,6 @@ void setup(void) {
           Serial.println("End Failed");
       });
   ArduinoOTA.begin();
-
-  connectToWifi();
 }
 
 // Function that is looped forever
@@ -115,7 +115,7 @@ void loop(void) {
     sendMqtt("compGasValue", String(iaqSensor.compGasValue));
     sendMqtt("compGasAccuracy", String(iaqSensor.compGasAccuracy));
     sendMqtt("gasResistance", String(iaqSensor.gasResistance));
-    Serial.println("Send new data via MQTT");
+    Serial.println("Sent new data via MQTT");
   } else {
     checkIaqSensorStatus();
   }
@@ -167,7 +167,8 @@ void onMqttConnect(bool sessionPresent) {
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.println("Disconnected from MQTT.");
+  Serial.print("Disconnected from MQTT: ");
+  Serial.println((int)reason);
 
   if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);
