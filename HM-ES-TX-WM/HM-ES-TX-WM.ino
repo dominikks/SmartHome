@@ -24,7 +24,7 @@
 // A0 == PIN 14 on Pro Mini
 #define COUNTER1_PIN 6
 #define COUNTER2_PIN 7
-// we send the counter every 30 seconds
+// we send the counter every 3 minutes
 #define MSG_CYCLE seconds2ticks(3*60)
 
 // number of available peers per channel
@@ -460,9 +460,9 @@ void setup () {
 
   // measure battery every 1h
   hal.battery.init(seconds2ticks(60UL*60),sysclock);
-  // set low voltage to 2.2V
-  hal.battery.low(22);
-  hal.battery.critical(19);
+  // set low voltage to 3.3V
+  hal.battery.low(33);
+  hal.battery.critical(30);
 
   c1ISR.attach();
   c2ISR.attach();
