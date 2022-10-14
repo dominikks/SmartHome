@@ -2,6 +2,7 @@
 // AskSin++
 // 2016-10-31 papa Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
+// ci-test=yes board=328p aes=no
 
 // define this to read the device id, serial and device type from bootloader section
 // #define USE_OTA_BOOTLOADER
@@ -23,9 +24,8 @@
 // Arduino pin for the counter impulse
 // A0 == PIN 14 on Pro Mini
 #define COUNTER1_PIN 6
-#define COUNTER2_PIN 7
 // we send the counter every 3 minutes
-#define MSG_CYCLE seconds2ticks(3*60)
+#define MSG_CYCLE seconds2ticks(60 * 3)
 
 // number of available peers per channel
 #define PEERS_PER_CHANNEL 2
@@ -38,7 +38,7 @@ const struct DeviceInfo PROGMEM devinfo = {
     {0x90,0x12,0x34},       // Device ID
     "papa555555",           // Device Serial
     {0x00,0xde},            // Device Model
-    0x11,                   // Firmware Version
+    0x10,                   // Firmware Version
     as::DeviceType::PowerMeter, // Device Type
     {0x01,0x00}             // Info Bytes
 };
@@ -379,7 +379,7 @@ public:
   }
 };
 
-typedef MultiChannelDevice<HalType,MeterChannel,2,MeterList0> MeterType;
+typedef MultiChannelDevice<HalType,MeterChannel,1,MeterList0> MeterType;
 
 HalType hal;
 MeterType sdev(devinfo,0x20);
@@ -439,16 +439,6 @@ void counter1ISR () {
   }
 }
 
-void counter2ISR();
-ISRWrapper<COUNTER2_PIN,counter2ISR,200> c2ISR;
-void counter2ISR () {
-  c2ISR.debounce();
-  if( c2ISR.checkstate() ) {
-    if( c2ISR.state() == LOW ) {
-      sdev.channel(2).next();
-    }
-  }
-}
 
 ConfigButton<MeterType> cfgBtn(sdev);
 
@@ -460,15 +450,13 @@ void setup () {
 
   // measure battery every 1h
   hal.battery.init(seconds2ticks(60UL*60),sysclock);
-  // set low voltage to 3.3V
-  hal.battery.low(33);
-  hal.battery.critical(30);
+  // set low voltage to 2.2V
+  hal.battery.low(22);
+  hal.battery.critical(19);
 
   c1ISR.attach();
-  c2ISR.attach();
   // add channel 1 to timer to send event
   sysclock.add(sdev.channel(1));
-  sysclock.add(sdev.channel(2));
   sdev.initDone();
 }
 
@@ -476,6 +464,6 @@ void loop() {
   bool worked = hal.runready();
   bool poll = sdev.pollRadio();
   if( worked == false && poll == false ) {
-    hal.activity.savePower<Idle<> >(hal);
+    hal.activity.savePower<Sleep<> >(hal);
   }
 }
