@@ -18,7 +18,11 @@ extern "C" {
 #include <Fonts/FreeMonoBold18pt7b.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
 
-#include "config/config.h"
+// !!! HIER DIE RICHTIGE CONFIG DATEI AUSKOMMENTIEREN !!!
+//#include "config/config.h"
+//#include "config/config_2.h"
+//#include "config/config_3.h"
+
 #include "icons/icons.h"
 
 AsyncMqttClient mqtt;
