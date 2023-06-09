@@ -42,7 +42,7 @@
 // - Clock Definition
 // - Schaltungsvariante und Pins für Batteriespannungsmessung
 // - Schwellwerte für Batteriespannungsmessung
-#include "Cfg/Device_S2.h"
+#include "Cfg/Device_S3.h"
 
 
 // number of available peers per channel
@@ -97,6 +97,10 @@ using namespace as;
 Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global sein (Interrupt event)
 #endif
 
+#ifdef SENSOR_ANAINPUT
+#include "Sensors/Sens_ANAINPUT.h"    // HB-UNI-Sensor1 custom sensor class
+#endif
+
 #ifdef SENSOR_VEML6070
 #include "Sensors/Sens_VEML6070.h"    // HB-UNI-Sensor1 custom sensor class
 #endif
@@ -132,7 +136,7 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 const struct DeviceInfo PROGMEM devinfo = {
     cDEVICE_ID,        // Device ID
     cDEVICE_SERIAL,    // Device Serial
-    { 0xF1, 0x12 },    // Device Model HB-UNI-Sensor2
+    { 0xF1, 0x13 },    // Device Model HB-UNI-Sensor3
     // Firmware Version
     // die CCU Addon xml Datei ist mit der Zeile <parameter index="9.0" size="1.0" cond_op="E" const_value="0x14" />
     // fest an diese Firmware Version gebunden! cond_op: E Equal, GE Greater or Equal
@@ -176,7 +180,7 @@ public:
 
 class WeatherEventMsg : public Message {
 public:
-    void init(uint8_t msgcnt, int16_t temp, uint8_t humidity, uint16_t co2, uint16_t batteryVoltage, bool batLow)
+    void init(uint8_t msgcnt, int16_t temp, uint16_t anaInput, uint16_t batteryVoltage, bool batLow)
     {
 
         uint8_t t1 = (temp >> 8) & 0x7f;
@@ -192,7 +196,7 @@ public:
         if ((msgcnt % 20) == 2) {
             flags = BIDI | WKMEUP;
         }
-        Message::init(16, msgcnt, 0x70, flags, t1, t2);
+        Message::init(15, msgcnt, 0x70, flags, t1, t2);
 
         // Message Length (first byte param.): 11 + payload
         //  1 Byte payload -> length 12
@@ -217,16 +221,13 @@ public:
         // die Zentrale, dass das Geräte noch kurz auf weitere Nachrichten wartet. Die Lib setzt diese Flag für die StatusInfo-Message
         // automatisch. Außerdem bleibt nach einer Kommunikation der Empfang grundsätzlich für 500ms angeschalten.
 
-        // humidity
-        pload[0] = humidity & 0xff;
-
-        // co2
-        pload[1] = (co2 >> 8) & 0xff;
-        pload[2] = co2 & 0xff;
+        // anaInput
+        pload[0] = (anaInput >> 8) & 0xff;
+        pload[1] = anaInput & 0xff;
 
         // batteryVoltage
-        pload[3] = (batteryVoltage >> 8) & 0xff;
-        pload[4] = batteryVoltage & 0xff;
+        pload[2] = (batteryVoltage >> 8) & 0xff;
+        pload[3] = batteryVoltage & 0xff;
     }
 };
 
@@ -296,6 +297,7 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
     uint16_t humidity10;
     uint32_t brightness100;
     uint8_t  digInputState;
+    uint16_t anaInputState;
     uint16_t customData;
     uint16_t batteryVoltage;
     bool     regularWakeUp;
@@ -348,6 +350,9 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
 #ifdef SENSOR_SCD30
     Sens_SCD30 scd30;
 #endif
+#ifdef SENSOR_ANAINPUT
+    Sens_ANAINPUT anaInput;
+#endif
 
 public:
     WeatherChannel()
@@ -358,6 +363,7 @@ public:
         , humidity10(0)
         , brightness100(0)
         , digInputState(0)
+        , anaInputState(0)
         , customData(0)
         , batteryVoltage(0)
         , regularWakeUp(true)
@@ -380,7 +386,7 @@ public:
         measure();
         uint8_t msgcnt   = device().nextcount();
         uint8_t humidity = (uint8_t)((humidity10 + 5) / 10);    // rounding
-        msg.init(msgcnt, temperature10, humidity, co2, batteryVoltage, device().battery().low());
+        msg.init(msgcnt, temperature10, anaInputState, batteryVoltage, device().battery().low());
         if (msg.flags() & Message::BCAST) {
             device().broadcastEvent(msg, *this);
         } else {
@@ -486,6 +492,9 @@ public:
 #ifdef SENSOR_DIGINPUT
         digInputState = digitalInput.pinState();
 #endif
+#ifdef SENSOR_ANAINPUT
+        anaInputState = anaInput.pinState();
+#endif
 
 #ifdef SENSOR_VEML6070
         veml6070.measure();
@@ -589,6 +598,9 @@ public:
 #endif
 #ifdef SENSOR_DIGINPUT
         digitalInput.init(DIGINPUT_PIN);
+#endif
+#ifdef SENSOR_ANAINPUT
+        anaInput.init(ANAINPUT_PIN, ANAINPUT_POWER_PIN);
 #endif
 #ifdef SENSOR_VEML6070
         veml6070.init();
