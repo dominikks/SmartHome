@@ -28,7 +28,7 @@ public:
                 _present = true;
                 DPRINTLN(F("SCD30 found"));
 
-                _scd30.setMeasurementInterval(40);
+                _scd30.setMeasurementInterval(60);
                 _scd30.setAltitudeCompensation(255);
 
                 return true;
