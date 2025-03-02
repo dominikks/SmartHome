@@ -20,8 +20,8 @@ extern "C" {
 
 // !!! HIER DIE RICHTIGE CONFIG DATEI AUSKOMMENTIEREN !!!
 //#include "config/config.h"
-//#include "config/config_2.h"
-//#include "config/config_3.h"
+//#include "config/config2.h"
+#include "config/config3.h"
 
 #include "icons/icons.h"
 
@@ -32,8 +32,11 @@ TimerHandle_t wifiReconnectTimer;
 typedef std::function<void()> Task;
 RingBuf<Task, 10> taskQueue;
 
-GxEPD2_3C<GxEPD2_420c, GxEPD2_420c::HEIGHT>
-    display(GxEPD2_420c(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> 
+    display(GxEPD2_420(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+
+//GxEPD2_3C<GxEPD2_420c, GxEPD2_420c::HEIGHT>
+//    display(GxEPD2_420c(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Arduino methods

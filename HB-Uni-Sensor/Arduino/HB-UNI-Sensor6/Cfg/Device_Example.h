@@ -1,8 +1,6 @@
 //---------------------------------------------------------
-// Device_S1.h
-// Verbaute Sensoren: UV, Helligkeit, Temperatur
-// Typ: HB-UNI-Sensor1.ino
-//
+// Device_Example.h
+// PCB: Breadboard / Prototyp_HB-UNI-Sensor1.jpg
 // 2018-2021 Tom Major (Creative Commons)
 // https://creativecommons.org/licenses/by-nc-sa/4.0/
 // You are free to Share & Adapt under the following terms:
@@ -29,10 +27,10 @@
 // Über diese defines werden die real angeschlossenen Sensoren aktiviert.
 // Andernfalls verwendet der Sketch Dummy-Werte als Messwerte (zum Testen der Anbindung an HomeMatic/RaspberryMatic/FHEM)
 //
-//#define SENSOR_DS18X20    // ONEWIRE_PIN define weiter unten muss zur HW passen! DS18X20_COUNT muss definiert sein!
+#define SENSOR_DS18X20    // ONEWIRE_PIN define weiter unten muss zur HW passen! DS18X20_COUNT muss definiert sein!
 #define SENSOR_BME280       // BME280 Library (finitespace) verwendet I2C Addr. 0x76, für 0x77 die Library anpassen!
 //#define SENSOR_BMP180
-#define SENSOR_MAX44009   // MAX44009_ADDR define weiter unten muss zur HW passen!
+//#define SENSOR_MAX44009   // MAX44009_ADDR define weiter unten muss zur HW passen!
 //#define SENSOR_TSL2561    // TSL2561_ADDR define weiter unten muss zur HW passen!
 //#define SENSOR_BH1750     // BH1750_ADDR define weiter unten muss zur HW passen!
 //#define SENSOR_SHT31      // SHT31_ADDR define weiter unten muss zur HW passen!
@@ -40,21 +38,21 @@
 //#define SENSOR_SHT10      // SHT10_DATAPIN / SHT10_CLKPIN define weiter unten muss zur HW passen!
 //#define SENSOR_AHTXX
 //#define SENSOR_DIGINPUT   // DIGINPUT_PIN define weiter unten muss zur HW passen!
-#define SENSOR_VEML6070
+//#define SENSOR_VEML6070
 //#define SENSOR_VEML6075
 
 
 //---------------------------------------------------------
 // Pin Definitionen Allgemein
 #define CONFIG_BUTTON_PIN   8
-#define LED_PIN             17
+#define LED_PIN             4
 
 
 //---------------------------------------------------------
 // Pin und Address Definitionen Sensoren
-//#define ONEWIRE_PIN         16
-//#define DS18X20_COUNT       1
-#define MAX44009_ADDR       0x4A
+#define ONEWIRE_PIN         3
+#define DS18X20_COUNT       1
+//#define MAX44009_ADDR     0x4A
 //#define TSL2561_ADDR      TSL2561_ADDR_FLOAT
 //#define BH1750_ADDR       0x23    // 0x23 (ADDR connecting to Gnd) or 0x5C (ADDR connecting to Vcc)
 //#define SHT31_ADDR        0x44    // by default its 0x44, you can also adjust the sensor for 0x45 and then pass that value in
@@ -75,20 +73,20 @@
 // Schaltungsvariante und Pins für Batteriespannungsmessung, siehe README
 //------------
 // 1) Standard: tmBattery, UBatt = Betriebsspannung AVR
-// #define BAT_SENSOR tmBattery
+#define BAT_SENSOR tmBattery
 //------------
 // 2) für StepUp/StepDown: tmBatteryResDiv, sense pin A0, activation pin D9, Faktor = Rges/Rlow*1000, z.B. 470k/100k, Faktor 570k/100k*1000 = 5700
 //#define BAT_SENSOR tmBatteryResDiv<A0, 9, 5700>
 //------------
 // 3) Echte Batteriespannungsmessung unter Last, siehe README und Thema "Babbling Idiot Protection"
 // tmBatteryLoad: sense pin A0, activation pin D9, Faktor = Rges/Rlow*1000, z.B. 10/30 Ohm, Faktor 40/10*1000 = 4000, 200ms Belastung vor Messung
-#define BAT_SENSOR tmBatteryLoad<A0, 9, 4300, 200>
+//#define BAT_SENSOR tmBatteryLoad<A0, 9, 4000, 200>
 
 
 //---------------------------------------------------------
 // Schwellwerte für Batteriespannungsmessung
-#define BAT_VOLT_LOW        10  // 1.0V
-#define BAT_VOLT_CRITICAL   1  // 0.1V
+#define BAT_VOLT_LOW        21  // 2.1V
+#define BAT_VOLT_CRITICAL   19  // 1.9V
 
 
 #endif

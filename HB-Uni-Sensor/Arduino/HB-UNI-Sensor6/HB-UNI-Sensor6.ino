@@ -42,7 +42,7 @@
 // - Clock Definition
 // - Schaltungsvariante und Pins für Batteriespannungsmessung
 // - Schwellwerte für Batteriespannungsmessung
-#include "Cfg/Device_S1.h"
+#include "Cfg/Device_S6.h"
 
 
 // number of available peers per channel
@@ -97,6 +97,10 @@ using namespace as;
 Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global sein (Interrupt event)
 #endif
 
+#ifdef SENSOR_ANAINPUT
+#include "Sensors/Sens_ANAINPUT.h"    // HB-UNI-Sensor1 custom sensor class
+#endif
+
 #ifdef SENSOR_VEML6070
 #include "Sensors/Sens_VEML6070.h"    // HB-UNI-Sensor1 custom sensor class
 #endif
@@ -107,6 +111,10 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 
 #if defined(SENSOR_BME280) || defined(SENSOR_SHT31) || defined(SENSOR_SHT21) || defined(SENSOR_SHT10) || defined(SENSOR_AHTXX)
 #include "Sensors/Sens_Environment.h"    // needs Arduino Lib https://github.com/finitespace/BME280
+#endif
+
+#ifdef SENSOR_SCD30
+#include "Sensors/Sens_SCD30.h"
 #endif
 
 #ifdef CLOCK_SYSCLOCK
@@ -128,7 +136,7 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 const struct DeviceInfo PROGMEM devinfo = {
     cDEVICE_ID,        // Device ID
     cDEVICE_SERIAL,    // Device Serial
-    { 0xF1, 0x03 },    // Device Model HB-UNI-Sensor1
+    { 0xF1, 0x16 },    // Device Model HB-UNI-Sensor6
     // Firmware Version
     // die CCU Addon xml Datei ist mit der Zeile <parameter index="9.0" size="1.0" cond_op="E" const_value="0x14" />
     // fest an diese Firmware Version gebunden! cond_op: E Equal, GE Greater or Equal
@@ -172,12 +180,11 @@ public:
 
 class WeatherEventMsg : public Message {
 public:
-    void init(uint8_t msgcnt, int16_t temp, uint16_t airPressure, uint8_t humidity, uint32_t brightness, uint8_t digInputState,
-              uint16_t batteryVoltage, bool batLow, uint8_t uvIndex)
+    void init(uint8_t msgcnt, int16_t temp1, int16_t temp2, int16_t temp3, uint16_t batteryVoltage, bool batLow)
     {
 
-        uint8_t t1 = (temp >> 8) & 0x7f;
-        uint8_t t2 = temp & 0xff;
+        uint8_t t1 = (temp1 >> 8) & 0x7f;
+        uint8_t t2 = temp1 & 0xff;
         if (batLow == true) {
             t1 |= 0x80;    // set bat low bit
         }
@@ -189,7 +196,7 @@ public:
         if ((msgcnt % 20) == 2) {
             flags = BIDI | WKMEUP;
         }
-        Message::init(21, msgcnt, 0x70, flags, t1, t2);
+        Message::init(17, msgcnt, 0x70, flags, t1, t2);
 
         // Message Length (first byte param.): 11 + payload
         //  1 Byte payload -> length 12
@@ -214,25 +221,14 @@ public:
         // die Zentrale, dass das Geräte noch kurz auf weitere Nachrichten wartet. Die Lib setzt diese Flag für die StatusInfo-Message
         // automatisch. Außerdem bleibt nach einer Kommunikation der Empfang grundsätzlich für 500ms angeschalten.
 
-        // brightness (Lux)
-        pload[0] = (brightness >> 24) & 0xff;
-        pload[1] = (brightness >> 16) & 0xff;
-        pload[2] = (brightness >> 8) & 0xff;
-        pload[3] = (brightness >> 0) & 0xff;
+        pload[0] = (temp2 >> 8) & 0xff;
+        pload[1] = temp2 & 0xff;
 
-        // batteryVoltage
+        pload[2] = (temp3 >> 8) & 0xff;
+        pload[3] = temp3 & 0xff;
+
         pload[4] = (batteryVoltage >> 8) & 0xff;
         pload[5] = batteryVoltage & 0xff;
-
-        // uvIndex
-        pload[6] = uvIndex & 0xff;
-
-        // air pressure
-        pload[7] = (airPressure >> 8) & 0xff;
-        pload[8] = airPressure & 0xff;
-
-        // humidity
-        pload[9] = humidity;
     }
 };
 
@@ -298,15 +294,19 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
     WeatherEventMsg msg;
 
     int16_t  temperature10;
+    int16_t  temperature10_2;
+    int16_t  temperature10_3;
     uint16_t airPressure10;
     uint16_t humidity10;
     uint32_t brightness100;
     uint8_t  digInputState;
+    uint16_t anaInputState;
     uint16_t customData;
     uint16_t batteryVoltage;
     bool     regularWakeUp;
     uint16_t absHumidity100;
     int16_t  dewPoint10;
+    uint16_t co2;
 
 #ifdef SENSOR_DS18X20
     OneWire      oneWire;
@@ -350,6 +350,12 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
 #if defined(SENSOR_BME280) || defined(SENSOR_SHT31) || defined(SENSOR_SHT21) || defined(SENSOR_SHT10) || defined(SENSOR_AHTXX)
     Sens_Environment environment;
 #endif
+#ifdef SENSOR_SCD30
+    Sens_SCD30 scd30;
+#endif
+#ifdef SENSOR_ANAINPUT
+    Sens_ANAINPUT anaInput;
+#endif
 
 public:
     WeatherChannel()
@@ -360,11 +366,13 @@ public:
         , humidity10(0)
         , brightness100(0)
         , digInputState(0)
+        , anaInputState(0)
         , customData(0)
         , batteryVoltage(0)
         , regularWakeUp(true)
         , absHumidity100(0)
         , dewPoint10(0)
+        , co2(0)
 #ifdef SENSOR_DS18X20
         , oneWire(ONEWIRE_PIN)
         , ds18x20Count(0)
@@ -381,7 +389,7 @@ public:
         measure();
         uint8_t msgcnt   = device().nextcount();
         uint8_t humidity = (uint8_t)((humidity10 + 5) / 10);    // rounding
-        msg.init(msgcnt, temperature10, airPressure10, humidity, brightness100, digInputState, batteryVoltage, device().battery().low(), customData);
+        msg.init(msgcnt, temperature10, temperature10_2, temperature10_3, batteryVoltage, device().battery().low());
         if (msg.flags() & Message::BCAST) {
             device().broadcastEvent(msg, *this);
         } else {
@@ -415,10 +423,11 @@ public:
         // Messwerte mit Dummy-Werten vorbelegen falls kein realer Sensor für die Messgröße vorhanden ist
         // zum Testen der Anbindung an HomeMatic/RaspberryMatic/FHEM
 #if !defined(SENSOR_DS18X20) && !defined(SENSOR_BME280) && !defined(SENSOR_BMP180) && !defined(SENSOR_SHT31) && !defined(SENSOR_SHT21)               \
-    && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX)
+    && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX) && !defined(SENSOR_SCD30)
         temperature10 = 200;    // 20.0C (scaling 10)
 #endif
-#if !defined(SENSOR_BME280) && !defined(SENSOR_SHT31) && !defined(SENSOR_SHT21) && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX)
+#if !defined(SENSOR_BME280) && !defined(SENSOR_SHT31) && !defined(SENSOR_SHT21) && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX)                  \
+    && !defined(SENSOR_SCD30)
         humidity10 = 500;    // 50.0% (scaling 10)
 #endif
 #if !defined(SENSOR_BME280) && !defined(SENSOR_BMP180)
@@ -464,6 +473,8 @@ public:
 #ifdef SENSOR_DS18X20
         Sens_DS18X20::measure(ds18x20, ds18x20Count);
         temperature10 = ds18x20[0].temperature();
+        temperature10_2 = ds18x20[1].temperature();
+        temperature10_3 = ds18x20[2].temperature();
         // Beispiel: Hier sind alle DS18B20 Temperaturen im Array falls mehrere DS18B20 an einem Pin/Bus verwendet werden
         // Dafür muss DS18X20_COUNT in der Konfigurationsdatei angepasst werden!
         // for (uint8_t i = 0; i < DS18X20_COUNT; i++) {
@@ -486,6 +497,9 @@ public:
 #ifdef SENSOR_DIGINPUT
         digInputState = digitalInput.pinState();
 #endif
+#ifdef SENSOR_ANAINPUT
+        anaInputState = anaInput.pinState();
+#endif
 
 #ifdef SENSOR_VEML6070
         veml6070.measure();
@@ -503,6 +517,13 @@ public:
         customData |= uvi10;
 #endif
 
+#ifdef SENSOR_SCD30
+        scd30.measure();
+        temperature10 = scd30.temperature();
+        humidity10    = scd30.humidity();
+        co2           = scd30.co2();
+#endif
+
         // bei Bedarf die Batteriespannung vor der Übertragung neu messen mittels update()
         // device().battery().update();
         batteryVoltage = device().battery().current();    // BatteryTM class, mV resolution
@@ -513,6 +534,8 @@ public:
         int16_t tOffset = (int16_t)this->device().getList0().tempOffset10();
         if (tOffset != 0) {
             temperature10 = temperature10 + tOffset;
+            temperature10_2 = temperature10_2 + tOffset;
+            temperature10_3 = temperature10_3 + tOffset;
             DPRINT(F("Temp. Corrected x10     : "));
             DDECLN(temperature10);
         }
@@ -583,11 +606,17 @@ public:
 #ifdef SENSOR_DIGINPUT
         digitalInput.init(DIGINPUT_PIN);
 #endif
+#ifdef SENSOR_ANAINPUT
+        anaInput.init(ANAINPUT_PIN, ANAINPUT_POWER_PIN);
+#endif
 #ifdef SENSOR_VEML6070
         veml6070.init();
 #endif
 #ifdef SENSOR_VEML6075
         veml6075.init();
+#endif
+#ifdef SENSOR_SCD30
+        scd30.init();
 #endif
         DPRINTLN(F("Sensor setup done"));
         DPRINT(F("Serial: "));
