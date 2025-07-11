@@ -43,6 +43,7 @@
 //#define SENSOR_VEML6070
 //#define SENSOR_VEML6075
 //#define SENSOR_SCD30
+//#define SENSOR_SCD41
 #define SENSOR_ANAINPUT
 
 //---------------------------------------------------------

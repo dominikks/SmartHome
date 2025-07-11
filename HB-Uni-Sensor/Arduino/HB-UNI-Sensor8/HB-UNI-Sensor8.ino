@@ -117,6 +117,10 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 #include "Sensors/Sens_SCD30.h"
 #endif
 
+#ifdef SENSOR_SCD41
+#include "Sensors/Sens_SCD41.h"
+#endif
+
 #ifdef CLOCK_SYSCLOCK
 #define CLOCK sysclock
 #define SAVEPWR_MODE Sleep<>
@@ -350,6 +354,9 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
 #ifdef SENSOR_SCD30
     Sens_SCD30 scd30;
 #endif
+#ifdef SENSOR_SCD41
+    Sens_SCD41 scd41;
+#endif
 #ifdef SENSOR_ANAINPUT
     Sens_ANAINPUT anaInput;
 #endif
@@ -420,11 +427,11 @@ public:
         // Messwerte mit Dummy-Werten vorbelegen falls kein realer Sensor für die Messgröße vorhanden ist
         // zum Testen der Anbindung an HomeMatic/RaspberryMatic/FHEM
 #if !defined(SENSOR_DS18X20) && !defined(SENSOR_BME280) && !defined(SENSOR_BMP180) && !defined(SENSOR_SHT31) && !defined(SENSOR_SHT21)               \
-    && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX) && !defined(SENSOR_SCD30)
+    && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX) && !defined(SENSOR_SCD30) && !defined(SENSOR_SCD41)
         temperature10 = 200;    // 20.0C (scaling 10)
 #endif
 #if !defined(SENSOR_BME280) && !defined(SENSOR_SHT31) && !defined(SENSOR_SHT21) && !defined(SENSOR_SHT10) && !defined(SENSOR_AHTXX)                  \
-    && !defined(SENSOR_SCD30)
+    && !defined(SENSOR_SCD30) && !defined(SENSOR_SCD41)
         humidity10 = 500;    // 50.0% (scaling 10)
 #endif
 #if !defined(SENSOR_BME280) && !defined(SENSOR_BMP180)
@@ -519,6 +526,13 @@ public:
         co2           = scd30.co2();
 #endif
 
+#ifdef SENSOR_SCD41
+        scd41.measure();
+        temperature10 = scd41.temperature();
+        humidity10    = scd41.humidity();
+        co2           = scd41.co2();
+#endif
+
         // bei Bedarf die Batteriespannung vor der Übertragung neu messen mittels update()
         // device().battery().update();
         batteryVoltage = device().battery().current();    // BatteryTM class, mV resolution
@@ -610,6 +624,9 @@ public:
 #endif
 #ifdef SENSOR_SCD30
         scd30.init();
+#endif
+#ifdef SENSOR_SCD41
+        scd41.init();
 #endif
         DPRINTLN(F("Sensor setup done"));
         DPRINT(F("Serial: "));
