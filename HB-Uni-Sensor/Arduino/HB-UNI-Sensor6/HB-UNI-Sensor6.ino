@@ -117,6 +117,10 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 #include "Sensors/Sens_SCD30.h"
 #endif
 
+#ifdef SENSOR_SCD41
+#include "Sensors/Sens_SCD41.h"
+#endif
+
 #ifdef CLOCK_SYSCLOCK
 #define CLOCK sysclock
 #define SAVEPWR_MODE Sleep<>
@@ -136,7 +140,7 @@ Sens_DIGINPUT digitalInput;           // muss wegen Verwendung in loop() global 
 const struct DeviceInfo PROGMEM devinfo = {
     cDEVICE_ID,        // Device ID
     cDEVICE_SERIAL,    // Device Serial
-    { 0xF1, 0x16 },    // Device Model HB-UNI-Sensor6
+    { 0xF1, 0x15 },    // Device Model HB-UNI-Sensor5 -> RICHTIG, der ist gleich zum 5er
     // Firmware Version
     // die CCU Addon xml Datei ist mit der Zeile <parameter index="9.0" size="1.0" cond_op="E" const_value="0x14" />
     // fest an diese Firmware Version gebunden! cond_op: E Equal, GE Greater or Equal
@@ -180,11 +184,11 @@ public:
 
 class WeatherEventMsg : public Message {
 public:
-    void init(uint8_t msgcnt, int16_t temp1, int16_t temp2, int16_t temp3, uint16_t batteryVoltage, bool batLow)
+    void init(uint8_t msgcnt, int16_t temp, uint8_t humidity, uint16_t co2, uint16_t batteryVoltage, bool batLow)
     {
 
-        uint8_t t1 = (temp1 >> 8) & 0x7f;
-        uint8_t t2 = temp1 & 0xff;
+        uint8_t t1 = (temp >> 8) & 0x7f;
+        uint8_t t2 = temp & 0xff;
         if (batLow == true) {
             t1 |= 0x80;    // set bat low bit
         }
@@ -196,7 +200,7 @@ public:
         if ((msgcnt % 20) == 2) {
             flags = BIDI | WKMEUP;
         }
-        Message::init(17, msgcnt, 0x70, flags, t1, t2);
+        Message::init(16, msgcnt, 0x70, flags, t1, t2);
 
         // Message Length (first byte param.): 11 + payload
         //  1 Byte payload -> length 12
@@ -221,14 +225,16 @@ public:
         // die Zentrale, dass das Geräte noch kurz auf weitere Nachrichten wartet. Die Lib setzt diese Flag für die StatusInfo-Message
         // automatisch. Außerdem bleibt nach einer Kommunikation der Empfang grundsätzlich für 500ms angeschalten.
 
-        pload[0] = (temp2 >> 8) & 0xff;
-        pload[1] = temp2 & 0xff;
+        // humidity
+        pload[0] = humidity & 0xff;
 
-        pload[2] = (temp3 >> 8) & 0xff;
-        pload[3] = temp3 & 0xff;
+        // co2
+        pload[1] = (co2 >> 8) & 0xff;
+        pload[2] = co2 & 0xff;
 
-        pload[4] = (batteryVoltage >> 8) & 0xff;
-        pload[5] = batteryVoltage & 0xff;
+        // batteryVoltage
+        pload[3] = (batteryVoltage >> 8) & 0xff;
+        pload[4] = batteryVoltage & 0xff;
     }
 };
 
@@ -294,8 +300,6 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
     WeatherEventMsg msg;
 
     int16_t  temperature10;
-    int16_t  temperature10_2;
-    int16_t  temperature10_3;
     uint16_t airPressure10;
     uint16_t humidity10;
     uint32_t brightness100;
@@ -353,6 +357,9 @@ class WeatherChannel : public Channel<Hal, List1, EmptyList, List4, PEERS_PER_CH
 #ifdef SENSOR_SCD30
     Sens_SCD30 scd30;
 #endif
+#ifdef SENSOR_SCD41
+    Sens_SCD41 scd41;
+#endif
 #ifdef SENSOR_ANAINPUT
     Sens_ANAINPUT anaInput;
 #endif
@@ -389,7 +396,7 @@ public:
         measure();
         uint8_t msgcnt   = device().nextcount();
         uint8_t humidity = (uint8_t)((humidity10 + 5) / 10);    // rounding
-        msg.init(msgcnt, temperature10, temperature10_2, temperature10_3, batteryVoltage, device().battery().low());
+        msg.init(msgcnt, temperature10, humidity, co2, batteryVoltage, device().battery().low());
         if (msg.flags() & Message::BCAST) {
             device().broadcastEvent(msg, *this);
         } else {
@@ -524,6 +531,13 @@ public:
         co2           = scd30.co2();
 #endif
 
+#ifdef SENSOR_SCD41
+        scd41.measure();
+        temperature10 = scd41.temperature();
+        humidity10    = scd41.humidity();
+        co2           = scd41.co2();
+#endif
+
         // bei Bedarf die Batteriespannung vor der Übertragung neu messen mittels update()
         // device().battery().update();
         batteryVoltage = device().battery().current();    // BatteryTM class, mV resolution
@@ -534,8 +548,6 @@ public:
         int16_t tOffset = (int16_t)this->device().getList0().tempOffset10();
         if (tOffset != 0) {
             temperature10 = temperature10 + tOffset;
-            temperature10_2 = temperature10_2 + tOffset;
-            temperature10_3 = temperature10_3 + tOffset;
             DPRINT(F("Temp. Corrected x10     : "));
             DDECLN(temperature10);
         }
@@ -617,6 +629,9 @@ public:
 #endif
 #ifdef SENSOR_SCD30
         scd30.init();
+#endif
+#ifdef SENSOR_SCD41
+        scd41.init();
 #endif
         DPRINTLN(F("Sensor setup done"));
         DPRINT(F("Serial: "));
